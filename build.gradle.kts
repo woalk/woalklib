@@ -5,6 +5,7 @@ plugins {
     kotlin("jvm") version "2.4.21"
     id("net.fabricmc.fabric-loom") version "1.19-SNAPSHOT"
     id("maven-publish")
+    id("com.modrinth.minotaur") version "2.+"
 }
 
 version = project.property("mod_version") as String
@@ -81,6 +82,9 @@ tasks.jar {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
+            if (System.getenv("CI_COMMIT_TAG").isNullOrBlank()) {
+                version = "${version}-SNAPSHOT"
+            }
             artifactId = project.property("archives_base_name") as String
             from(components["java"])
         }
@@ -88,9 +92,29 @@ publishing {
 
     // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
     repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
+        maven {
+            val serverHost = System.getenv("CI_SERVER_HOST")
+            val projectId = System.getenv("CI_PROJECT_ID")
+            url = uri("https://${serverHost}/api/v4/projects/${projectId}/packages/maven")
+            name = "GitLab"
+            credentials(HttpHeaderCredentials::class) {
+                name = "Job-Token"
+                value = System.getenv("CI_JOB_TOKEN")
+            }
+            authentication {
+                create("header", HttpHeaderAuthentication::class)
+            }
+        }
+    }
+}
+
+modrinth {
+    token.set(System.getenv("MODRINTH_TOKEN"))
+    projectId.set("woalklib")
+    versionType.set("beta")
+    uploadFile.set(tasks.jar)
+    dependencies {
+        required.project("fabric-api")
+        required.project("fabric-language-kotlin")
     }
 }
