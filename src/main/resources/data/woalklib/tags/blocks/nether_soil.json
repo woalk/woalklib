@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "#c:netherrack",
+    "#c:soul_ground",
+    "#minecraft:base_stone_nether",
+    "#minecraft:nylium"
+  ]
+}
