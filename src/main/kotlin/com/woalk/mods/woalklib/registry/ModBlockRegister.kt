@@ -8,6 +8,8 @@ import net.fabricmc.fabric.api.registry.FlammableBlockRegistry
 import net.minecraft.client.color.block.BlockTintSources
 import net.minecraft.core.Registry
 import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.core.registries.Registries
+import net.minecraft.references.BlockItemId
 import net.minecraft.resources.Identifier
 import net.minecraft.resources.ResourceKey
 import net.minecraft.world.item.BlockItem
@@ -50,6 +52,21 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
         triple: Triple<Block, ((Block, Item.Properties) -> BlockItem)?, (() -> Item.Properties)?>
     ) = register(
         id,
+        BlockPreRegister(
+            triple.first,
+            if (triple.second != null && triple.third != null) ItemPreRegister(
+                triple.second!!,
+                triple.third!!,
+            ) else null,
+            defaultCreativeModeTab,
+        ),
+    )
+
+    protected fun register(
+        key: ResourceKey<Block>,
+        triple: Triple<Block, ((Block, Item.Properties) -> BlockItem)?, (() -> Item.Properties)?>
+    ) = register(
+        key,
         BlockPreRegister(
             triple.first,
             if (triple.second != null && triple.third != null) ItemPreRegister(
@@ -113,10 +130,17 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
         id: String,
         toRegister: BlockPreRegister<in Block>
     ) {
+        val identifier = Identifier.fromNamespaceAndPath(getNamespace(id), id)
+        val blockItemId = BlockItemId(
+            ResourceKey.create(Registries.BLOCK, identifier),
+            ResourceKey.create(Registries.ITEM, identifier),
+        )
+        toRegister.block.properties().setId(blockItemId.block)
         super.registerNow(id, toRegister)
-        var item: BlockItem? = null
         if (toRegister.item != null) {
-            item = toRegister.item.itemGenerator.invoke(toRegister.block, toRegister.item.itemPropertyGenerator.invoke())
+            val item = toRegister.item.itemGenerator.invoke(toRegister.block, toRegister.item.itemPropertyGenerator().apply {
+                setId(blockItemId.item)
+            })
             Registry.register(
                 BuiltInRegistries.ITEM, Identifier.fromNamespaceAndPath(getNamespace(id), id), item
             )
@@ -132,6 +156,8 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
             }
         }
     }
+
+    override fun onRegister(toRegister: BlockPreRegister<in Block>): Block = toRegister.block
 
     override fun registerAll() {
         super.registerAll()

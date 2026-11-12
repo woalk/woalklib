@@ -4,7 +4,7 @@ import com.woalk.mods.woalklib.WoalklibMod
 import net.minecraft.world.item.Item
 
 object LibWideItems: ModItemRegister() {
-    val logoItem = registerTyped("logo", ::Item)
+    val logoItem = register("logo", ::Item)
 
     override fun getModId(): String = WoalklibMod.MOD_ID
 }
