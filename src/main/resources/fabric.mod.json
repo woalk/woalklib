@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "woalklib",
+  "version": "${version}",
+  "name": "WoalkLib",
+  "description": "Library for commonly used features among Woalk's mods",
+  "authors": [],
+  "contact": {},
+  "license": "GPL-3.0",
+  "icon": "assets/woalklib/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "com.woalk.mods.woalklib.client.WoalklibModClient"
+    ],
+    "main": [
+      "com.woalk.mods.woalklib.WoalklibMod"
+    ]
+  },
+  "mixins": [
+    "woalklib.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-language-kotlin": ">=${kotlin_loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
