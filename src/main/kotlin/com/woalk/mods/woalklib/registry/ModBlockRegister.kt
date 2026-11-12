@@ -3,6 +3,7 @@ package com.woalk.mods.woalklib.registry
 import com.woalk.mods.woalklib.blocks.IBlockWithItem
 import com.woalk.mods.woalklib.config.LibWideConfigReader
 import net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry
 import net.minecraft.client.color.block.BlockTintSources
 import net.minecraft.core.Registry
@@ -33,9 +34,10 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
         val spread: Int = 20
     )
 
-    private val FLAMMABLE_BLOCKS = LinkedList<Pair<Block, FlammableInfo>>()
-    private val FOLIAGE_BLOCKS = LinkedList<Block>()
-    private val MARKER_BLOCKS = HashSet<Block>()
+    private val flammableBlocks = LinkedList<Pair<Block, FlammableInfo>>()
+    private val foliageBlocks = LinkedList<Block>()
+    private val markerBlocks = HashSet<Block>()
+    private val groupedBlocks = HashMap<ResourceKey<CreativeModeTab>, MutableSet<Block>>()
 
     protected open fun defaultItemSettings() = Item.Properties()
     protected open var itemSettings = defaultItemSettings()
@@ -58,6 +60,7 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
         ),
     )
 
+    //region Helper methods for porting compatibility
     protected fun register(
         id: String,
         pair: Pair<Block, (() -> Item.Properties)?>
@@ -87,21 +90,24 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
 
     protected fun register(id: String, block: Block, itemSettings: Item.Properties) =
         register(id, Pair(block) { itemSettings }).block
+    //endregion
 
+    //region Helper methods for special kinds of blocks
     protected fun flammable(block: Block, info: FlammableInfo = FlammableInfo()): Block {
-        FLAMMABLE_BLOCKS.add(Pair(block, info))
+        flammableBlocks.add(Pair(block, info))
         return block
     }
 
     protected fun foliage(block: Block): Block {
-        FOLIAGE_BLOCKS.add(block)
+        foliageBlocks.add(block)
         return block
     }
 
     protected fun marker(block: Block): Block {
-        MARKER_BLOCKS.add(block)
+        markerBlocks.add(block)
         return block
     }
+    //endregion
 
     override fun registerNow(
         id: String,
@@ -114,8 +120,12 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
             Registry.register(
                 BuiltInRegistries.ITEM, Identifier.fromNamespaceAndPath(getNamespace(id), id), item
             )
-            if (MARKER_BLOCKS.contains(toRegister.block)) {
-                MarkerRegistry.MARKER_ITEMS.add(item)
+            if (toRegister.group != null) {
+                val groupSet = groupedBlocks.getOrPut(toRegister.group, ::HashSet)
+                groupSet.add(toRegister.block)
+            }
+            if (markerBlocks.contains(toRegister.block)) {
+                MarkerRegistry.markerItems.add(item)
             }
             if (toRegister.block is IBlockWithItem) {
                 toRegister.block.item = item
@@ -125,14 +135,21 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
 
     override fun registerAll() {
         super.registerAll()
-        for ((block, info) in FLAMMABLE_BLOCKS) {
+        for ((block, info) in flammableBlocks) {
             FlammableBlockRegistry.getDefaultInstance().add(block, info.burn, info.spread)
         }
-        MARKER_BLOCKS.clear()
+        for ((group, blocks) in groupedBlocks) {
+            CreativeModeTabEvents.modifyOutputEvent(group).register {
+                for (block in blocks) {
+                    it.accept(block)
+                }
+            }
+        }
+        markerBlocks.clear()
     }
 
     override fun registerAllClient() {
-        BlockColorRegistry.register(listOf(BlockTintSources.foliage()), *FOLIAGE_BLOCKS.toTypedArray())
-        FOLIAGE_BLOCKS.clear()
+        BlockColorRegistry.register(listOf(BlockTintSources.foliage()), *foliageBlocks.toTypedArray())
+        foliageBlocks.clear()
     }
 }

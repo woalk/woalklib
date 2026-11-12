@@ -4,5 +4,5 @@ import net.minecraft.world.item.BlockItem
 import java.util.HashSet
 
 object MarkerRegistry {
-    val MARKER_ITEMS = HashSet<BlockItem>()
+    val markerItems = HashSet<BlockItem>()
 }
