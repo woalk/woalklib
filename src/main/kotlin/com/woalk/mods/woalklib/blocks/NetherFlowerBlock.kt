@@ -7,6 +7,9 @@ import net.minecraft.world.effect.MobEffect
 import net.minecraft.world.level.BlockGetter
 import net.minecraft.world.level.block.state.BlockState
 
+/**
+ * A [ReproducibleFlowerBlock] that can be placed on Nether soil.
+ */
 class NetherFlowerBlock(suspiciousStewEffect: Holder<MobEffect>, effectDuration: Float, properties: Properties) :
     ReproducibleFlowerBlock(suspiciousStewEffect, effectDuration, properties) {
     override fun mayPlaceOn(state: BlockState, level: BlockGetter, pos: BlockPos): Boolean {

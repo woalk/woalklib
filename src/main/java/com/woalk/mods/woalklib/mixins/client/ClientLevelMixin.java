@@ -9,6 +9,10 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.Set;
 
+/**
+ * Mixin to the rendering code for marker items (such as barrier blocks and light blocks)
+ * to inject our own marker items.
+ */
 @Mixin(ClientLevel.class)
 public class ClientLevelMixin {
     @Redirect(method = "getMarkerParticleTarget", at = @At(value = "INVOKE", target = "Ljava/util/Set;contains(Ljava/lang/Object;)Z"))

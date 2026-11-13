@@ -6,7 +6,9 @@ import net.fabricmc.api.ModInitializer
 import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
 
-
+/**
+ * Main entrypoint for the library mod.
+ */
 class WoalklibMod : ModInitializer {
     companion object {
         const val MOD_ID = "woalklib"

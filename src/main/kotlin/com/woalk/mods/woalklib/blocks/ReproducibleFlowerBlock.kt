@@ -17,6 +17,9 @@ import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.Shapes
 import net.minecraft.world.phys.shapes.VoxelShape
 
+/**
+ * A [FlowerBlock] that can be multiplied using Bone Meal.
+ */
 open class ReproducibleFlowerBlock(suspiciousStewEffect: Holder<MobEffect>, effectDuration: Float, settings: Properties) :
     FlowerBlock(suspiciousStewEffect, effectDuration, settings), BonemealableBlock {
     private val shape = Shapes.box(2.0, 0.0, 2.0, 14.0, 12.0, 14.0)

@@ -7,8 +7,18 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceKey
 import net.minecraft.world.item.CreativeModeTab
 
+/**
+ * This class provides Creative Mode tabs for usage of all Woalk mods.
+ */
 object LibWideCreativeTabs: ModRegister<CreativeModeTab, CreativeModeTab>(BuiltInRegistries.CREATIVE_MODE_TAB) {
+    /**
+     * The resource key for the [woalkItemsTab].
+     */
     val woalkItemsTabKey = ResourceKey.create(BuiltInRegistries.CREATIVE_MODE_TAB.key(), WoalklibMod.id("tab"))
+
+    /**
+     * The "Woalk's Items" tab, using a Woalk logo as its icon.
+     */
     val woalkItemsTab = register(woalkItemsTabKey, FabricCreativeModeTab.builder()
         .title(Component.translatable("creativeTab.woalklib"))
         .icon { LibWideItems.logoItem.defaultInstance }

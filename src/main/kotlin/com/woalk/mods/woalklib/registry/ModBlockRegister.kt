@@ -19,17 +19,44 @@ import net.minecraft.world.item.Rarity
 import net.minecraft.world.level.block.Block
 import java.util.*
 
+/**
+ * A base class for classes that register [Block]s with the built-in `BLOCKS` registry,
+ * including their [BlockItem]s, Creative Mode tabs and special behavior.
+ */
 abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<in Block>, Block>(BuiltInRegistries.BLOCK), IModClientRegister {
+    /**
+     * Represents a block queued for registration, with all information needed to perform the actual registration.
+     *
+     * @param block The [Block] instance.
+     * @param item The optional [ItemPreRegister] containing information about how to handle this [block]'s [BlockItem].
+     *             If `null`, no [BlockItem] is generated.
+     * @param group The optional [CreativeModeTab] to add this block to. If `null`, the item will not be added to a tab.
+     *              Only works if an [item] instance is provided.
+     */
     data class BlockPreRegister <T: Block> (
         val block: T,
         val item: ItemPreRegister? = null,
         val group: ResourceKey<CreativeModeTab>? = null
     )
+
+    /**
+     * Represents registration information for [BlockItem]s.
+     *
+     * @param itemGenerator A function that's called to create a new instance of the [BlockItem].
+     * @param itemPropertyGenerator A supplier to create the [Item.Properties] of the [BlockItem].
+     *
+     * @see BlockPreRegister.item
+     */
     data class ItemPreRegister(
         val itemGenerator: (Block, Item.Properties) -> BlockItem,
         val itemPropertyGenerator: (() -> Item.Properties),
     )
 
+    /**
+     * Information about flammability of an item.
+     *
+     * @see flammable
+     */
     protected data class FlammableInfo(
         val burnValue: Int? = 300,
         val burn: Int = 30,
@@ -41,12 +68,39 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
     private val markerBlocks = HashSet<Block>()
     private val groupedBlocks = HashMap<ResourceKey<CreativeModeTab>, MutableSet<Block>>()
 
+    /**
+     * A function that provides a fresh instance of the default [Item.Properties] that are used by this register.
+     */
     protected open fun defaultItemSettings() = Item.Properties()
+
+    /**
+     * The default [Item.Properties] used by this register's convenience functions.
+     * Do not modify this instance, as it will affect all following block registrations performed by this registry.
+     *
+     * @see defaultItemSettings
+     */
     protected open var itemSettings = defaultItemSettings()
+
+    /**
+     * The default [Item.Properties] used by this register's [registerEpic] convenience functions,
+     * setting the [BlockItem] as [Rarity.EPIC].
+     * Do not modify this instance, as it will affect all following block registrations performed by this registry.
+     *
+     * @see defaultItemSettings
+     */
     protected open var epicItemSettings = defaultItemSettings().rarity(Rarity.EPIC)
 
+    /**
+     * The default Creative Mode tab that [BlockItem]s in this registry are added to using the convenience functions.
+     */
     protected open var defaultCreativeModeTab = LibWideCreativeTabs.woalkItemsTabKey
 
+    /**
+     * Backwards-compatible function for block registration.
+     *
+     * @param id The path for the block's [Identifier].
+     * @param triple An older form of representation of a [BlockPreRegister] instance.
+     */
     protected fun register(
         id: String,
         triple: Triple<Block, ((Block, Item.Properties) -> BlockItem)?, (() -> Item.Properties)?>
@@ -62,6 +116,12 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
         ),
     )
 
+    /**
+     * Backwards-compatible function for block registration.
+     *
+     * @param key The [ResourceKey] to use as-is for the new block.
+     * @param triple An older form of representation of a [BlockPreRegister] instance.
+     */
     protected fun register(
         key: ResourceKey<Block>,
         triple: Triple<Block, ((Block, Item.Properties) -> BlockItem)?, (() -> Item.Properties)?>
@@ -78,23 +138,67 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
     )
 
     //region Helper methods for porting compatibility
+    /**
+     * Backwards-compatible function for block registration.
+     *
+     * @param id The path for the block's [Identifier].
+     * @param pair An older form of representation for a [BlockPreRegister] instance, using a default [BlockItem].
+     */
     protected fun register(
         id: String,
         pair: Pair<Block, (() -> Item.Properties)?>
     ) = register(id, Triple(pair.first, ::BlockItem, pair.second))
 
+    /**
+     * Backwards-compatible function for block registration.
+     * This is the simplest way of registering a block.
+     *
+     * @param id The path for the block's [Identifier].
+     * @param block The block instance to register.
+     */
     protected fun register(id: String, block: Block): Block =
         register(id, Pair(block) { itemSettings }).block
 
+    /**
+     * Backwards-compatible function for block registration.
+     *
+     * @param id The path for the block's [Identifier].
+     * @param block The block instance to register.
+     * @param item A [BlockItem] constructor to tell which [BlockItem] subclass to use for this block.
+     */
     protected fun register(id: String, block: Block, item: (Block, Item.Properties) -> BlockItem): Block =
         register(id, Triple(block, item) { itemSettings }).block
 
+    /**
+     * Backwards-compatible function for block registration.
+     * The item will be marked as [Rarity.EPIC] using [epicItemSettings].
+     *
+     * @param id The path for the block's [Identifier].
+     * @param block The block instance to register.
+     */
     protected fun registerEpic(id: String, block: Block): Block =
         register(id, Pair(block) { epicItemSettings }).block
 
+    /**
+     * Backwards-compatible function for block registration.
+     * The item will be marked as [Rarity.EPIC] using [epicItemSettings].
+     *
+     * @param id The path for the block's [Identifier].
+     * @param block The block instance to register.
+     * @param item A [BlockItem] constructor to tell which [BlockItem] subclass to use for this block.
+     */
     protected fun registerEpic(id: String, block: Block, item: (Block, Item.Properties) -> BlockItem): Block =
         register(id, Triple(block, item) { epicItemSettings }).block
 
+    /**
+     * Backwards-compatible function for block registration.
+     * The item will not be added to the [defaultCreativeModeTab] unless
+     * [com.woalk.mods.woalklib.config.WoalkConfig.ignoreRestrictedItemRecommendations]
+     * is set to `true`.
+     *
+     * @param id The path for the block's [Identifier].
+     * @param block The block instance to register.
+     */
     protected fun registerHidden(id: String, block: Block): Block =
         register(id, BlockPreRegister(
             block,
@@ -102,24 +206,49 @@ abstract class ModBlockRegister : ModRegister<ModBlockRegister.BlockPreRegister<
             if (LibWideConfigReader.woalkConfig.ignoreRestrictedItemRecommendations) defaultCreativeModeTab else null
         )).block
 
+    /**
+     * Backwards-compatible function for block registration.
+     * No [BlockItem] is registered for this block.
+     *
+     * @param id The path for the block's [Identifier].
+     * @param block The block instance to register.
+     */
     protected fun registerNoItem(id: String, block: Block): Block =
         register(id, Pair(block, null)).block
 
+    /**
+     * Backwards-compatible function for block registration.
+     *
+     * @param id The path for the block's [Identifier].
+     * @param block The block instance to register.
+     * @param itemSettings The [Item.Properties] to use for the [BlockItem].
+     */
     protected fun register(id: String, block: Block, itemSettings: Item.Properties) =
         register(id, Pair(block) { itemSettings }).block
     //endregion
 
     //region Helper methods for special kinds of blocks
+    /**
+     * Mark this block as flammable, providing [info] about how much fuel it provides in a furnace.
+     */
     protected fun flammable(block: Block, info: FlammableInfo = FlammableInfo()): Block {
         flammableBlocks.add(Pair(block, info))
         return block
     }
 
+    /**
+     * Mark a block as foliage, giving it a biome-specific tint similar to oak leaves.
+     */
     protected fun foliage(block: Block): Block {
         foliageBlocks.add(block)
         return block
     }
 
+    /**
+     * Mark a block as having a marker item, i.e. it shows a particle when held where this block is placed in the world.
+     *
+     * @see MarkerRegistry
+     */
     protected fun marker(block: Block): Block {
         markerBlocks.add(block)
         return block
